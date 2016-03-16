@@ -2,6 +2,7 @@
 # TODO: better compatibility with other OS X versions / python frameworks
 from lxml import html
 import requests
+from datetime import datetime
 
 # <bitbar.title>University of Trento Weather Service</bitbar.title>
 # <bitbar.version>v0.1</bitbar.version>
@@ -36,12 +37,23 @@ try: # needed for network connections (e.g. website unavailable or no Internet c
     HUM_LIM = '80'
     PRECIP_LIM = '0'
     WIND_SPEED_LIM = '5'
+    UPD_LIM_HRS = 6 # max hours between the updates (in which case we assume the system is not working)
 
     FONT_COLOR = '#000000'	# default font color - black
     FONT_COLOR_TEMP = '#000000'
     FONT_COLOR_HUM = '#000000'
     FONT_COLOR_PRECIP = '#000000'
     FONT_COLOR_WIND_SPEED = '#000000'
+    FONT_COLOR_UPDATED = '#D3D3D3'  # gray default colour
+
+    # when was the data last updated? Year, month, day, hour, min
+    UPD_YY = resp2[1].split('/')[2].strip()
+    UPD_MM = resp2[1].split('/')[1].strip()
+    UPD_DD = resp2[1].split('/')[0].strip()
+    UPD_HH = resp3[1].split(':')[0].strip()
+    UPD_MN = resp3[1].split(':')[1].strip()
+
+    UPD_LAST = datetime.strptime(UPD_YY + " " + UPD_MM  + " " + UPD_DD + " " + UPD_HH + " " + UPD_MN, "%y %m %d %H %M")
 
     # need to convert to floats as the lxml responses are strings
     if float(resp[0].strip()) < float(TEMP_LIM_LOWER) or float(resp[0].strip()) > float(TEMP_LIM_UPPER):
@@ -55,6 +67,10 @@ try: # needed for network connections (e.g. website unavailable or no Internet c
 
     if float(resp[5].strip()) > float(WIND_SPEED_LIM):
         FONT_COLOR_WIND_SPEED = '#FF0000'
+
+    # compare the number of hours elapsed since the last update
+    if ((datetime.now() - UPD_LAST).total_seconds() / 3600) > UPD_LIM_HRS:
+        FONT_COLOR_UPDATED = '#FF0000'
 
 
 
@@ -72,7 +88,7 @@ try: # needed for network connections (e.g. website unavailable or no Internet c
     print ("Wind Speed:\t",resp[5].strip(), " m/s", " | color=",FONT_COLOR_WIND_SPEED)
     print ("Wind Direction:\t",resp[6].strip(), " N", " | color=",FONT_COLOR)
     print ("Pressure:\t",resp[2].strip(), " hPa", " | color=",FONT_COLOR)
-    print ("Last update:\t", resp3[1])
+    print ("Last update:\t", resp2[1], resp3[1], " | color=",FONT_COLOR_UPDATED) # date / time
 
 except Exception as ex:
     print ("Error! | font=UbuntuMono-Bold color=#FF0000 size=11")
